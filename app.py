@@ -7,6 +7,10 @@ app = Flask(__name__)
 def hello():
     return 'Hello World!'
 
+@app.route('/answer', methods=['POST'])
+def answer():
+    return 'answered'
+
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
