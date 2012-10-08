@@ -8,3 +8,16 @@ env.key_filename = ["/home/bibhas/.ssh/ec2bi.pem"]
 
 def test():
     run('whoami')
+
+def pack():
+    local('git archive HEAD > dist/gitcall.tar')
+
+def upload_tarball():
+    # /home/ubuntu/sites/gitcall/
+    put('dist/gitcall.tar', '/home/ubuntu/sites/gitcall/dist/')
+
+def deploy():
+    pack()
+    upload_tarball()
+    with cd('/home/ubuntu/sites/gitcall/'):
+        run('tar -xvf dist/gitcall.tar')
