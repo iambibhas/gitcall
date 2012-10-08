@@ -16,8 +16,21 @@ def upload_tarball():
     # /home/ubuntu/sites/gitcall/
     put('dist/gitcall.tar', '/home/ubuntu/sites/gitcall/dist/')
 
+def restart_apache():
+    sudo('/etc/init.d/apache2 restart')
+
+def setup_vhost():
+    with cd('/home/ubuntu/sites/gitcall/'):
+        sudo('cp gitcall.vhost /etc/apache2/sites-available/gitcall.bibhas.in')
+        sudo('a2dissite gitcall.bibhas.in')
+        sudo('a2ensite gitcall.bibhas.in')
+        restart_apache()
+
 def deploy():
     pack()
     upload_tarball()
+    # Extract files
     with cd('/home/ubuntu/sites/gitcall/'):
         run('tar -xvf dist/gitcall.tar')
+    # create virtualhost
+    setup_vhost()
