@@ -26,6 +26,12 @@ def setup_vhost():
         sudo('a2ensite gitcall.bibhas.in')
         restart_apache()
 
+def setup_venv():
+    with cd('/home/ubuntu/sites/gitcall/'):
+        run('virtualenv venv')
+        with prefix('source venv/bin/activate'):
+            run('pip install -r requirements.txt')
+
 def deploy():
     pack()
     upload_tarball()
