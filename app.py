@@ -4,7 +4,7 @@ from flask import Flask
 app = Flask(__name__)
 
 @app.route('/')
-def hello():
+def home():
     return 'Hello World!'
 
 @app.route('/answer', methods=['POST'])
