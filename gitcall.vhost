@@ -3,7 +3,6 @@
 
     WSGIDaemonProcess gitcall user=ubuntu group=ubuntu threads=5
     WSGIScriptAlias / /home/ubuntu/sites/gitcall/gitcall.wsgi
-    WSGIPythonPath /home/ubuntu/sites/gitcall:/home/ubuntu/sites/gitcall/venv/lib/python2.6/site-packages
 
     <Directory /home/ubuntu/sites/gitcall>
         WSGIProcessGroup gitcall
