@@ -25,7 +25,7 @@ def login():
     )
     authorization_url = oauth_client.authorization_url(
         redirect_uri=oauth_settings['redirect_url'],
-        # params={'scope': 'user'}
+        params={'scope': 'user,repo'}
     )
     logging.debug('authorization_url: %s' % authorization_url)
     return redirect(authorization_url)

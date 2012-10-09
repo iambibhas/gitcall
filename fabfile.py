@@ -17,8 +17,8 @@ def pack():
     local('git archive HEAD > dist/%s.tar' % env.project)
 
 def upload_tarball():
-    # /home/ubuntu/sites/gitcall/
     with cd(env.project_path):
+        # saving last deployment tarball for backup
         run('mv dist/%s.tar dist/last_deploy.tar' % env.project)
         put('dist/%s.tar' % env.project, 'dist/')
 
