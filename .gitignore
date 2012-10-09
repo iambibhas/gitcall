@@ -1,4 +1,6 @@
 *.pyc
 config.py
+*.log
+
 venv
 dist
