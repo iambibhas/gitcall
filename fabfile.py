@@ -1,4 +1,5 @@
 from fabric.api import *
+from fabric.contrib import files
 
 # the user to use for the remote commands
 env.user = 'ubuntu'
