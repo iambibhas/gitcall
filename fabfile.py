@@ -18,7 +18,9 @@ def pack():
 
 def upload_tarball():
     # /home/ubuntu/sites/gitcall/
-    put('dist/%s.tar' % env.project, '%s/dist/' % env.project_path)
+    with cd(env.project_path):
+        run('mv dist/%s.tar dist/last_deploy.tar' % env.project)
+        put('dist/%s.tar' % env.project, 'dist/')
 
 def reload_apache():
     sudo('/etc/init.d/apache2 reload')
