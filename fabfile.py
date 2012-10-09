@@ -23,6 +23,7 @@ def setup_vhost():
     with cd('/home/ubuntu/sites/gitcall/'):
         sudo('cp gitcall.vhost /etc/apache2/sites-available/gitcall.bibhas.in')
         sudo('a2dissite gitcall.bibhas.in')
+        restart_apache()
         sudo('a2ensite gitcall.bibhas.in')
         restart_apache()
 
@@ -38,5 +39,6 @@ def deploy():
     # Extract files
     with cd('/home/ubuntu/sites/gitcall/'):
         run('tar -xvf dist/gitcall.tar')
+    setup_venv()
     # create virtualhost
     setup_vhost()
