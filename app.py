@@ -1,11 +1,52 @@
 import os
 import oauth2
-import logging
+import logging, string, random
 from flask import Flask, redirect, request
 from config import github_oauth_settings as oauth_settings
+from flask.ext.sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
+db = SQLAlchemy(app)
 logging.basicConfig(filename='app.log',level=logging.DEBUG)
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True)
+    email = db.Column(db.String(120), unique=True)
+    access_token = db.Column(db.String(64), unique=True)
+
+    def __init__(self, username, email, token):
+        self.username = username
+        self.email = email
+        self.token = token
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+
+class UserRepo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship(
+        'User', 
+        backref = db.backref('linked_repos', lazy='dynamic')
+    )
+    repo_id = db.Column(db.Integer, unique=True)
+    repo_name = db.Column(db.String(256))
+    token = db.Column(db.String(8), unique=True)
+    create_date = db.Column(db.DateTime)
+
+    def __init__(self, user, repo_id, repo_name):
+        self.user = user
+        self.repo_id = repo_id
+        self.repo_name = repo_name
+        self.token = ''.join([random.choice(string.ascii_lowercase + string.octdigits) for x in range(8)])
+        self.create_date = datetime.utcnow()
+
+    def __repr__(self):
+        return '<UserRepo %r/%r>' % (self.user.username, self.repo_name)
 
 @app.route('/')
 def home():
