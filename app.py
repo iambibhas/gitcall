@@ -1,7 +1,8 @@
 import os
 import oauth2
 import logging, string, random
-from flask import Flask, redirect, request
+from datetime import datetime
+from flask import Flask, redirect, request, session, render_template
 from config import github_oauth_settings as oauth_settings
 from flask.ext.sqlalchemy import SQLAlchemy
 
@@ -16,11 +17,12 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
     access_token = db.Column(db.String(64), unique=True)
+    linked_repos = db.relationship('UserRepo', backref='user', lazy='select')
 
-    def __init__(self, username, email, token):
+    def __init__(self, username, email, access_token):
         self.username = username
         self.email = email
-        self.token = token
+        self.access_token = access_token
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -28,18 +30,16 @@ class User(db.Model):
 
 class UserRepo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = db.relationship(
-        'User', 
-        backref = db.backref('linked_repos', lazy='dynamic')
-    )
+    
     repo_id = db.Column(db.Integer, unique=True)
     repo_name = db.Column(db.String(256))
     token = db.Column(db.String(8), unique=True)
     create_date = db.Column(db.DateTime)
 
-    def __init__(self, user, repo_id, repo_name):
-        self.user = user
+    def __init__(self, user_id, repo_id, repo_name):
+        self.user_id = user_id
         self.repo_id = repo_id
         self.repo_name = repo_name
         self.token = ''.join([random.choice(string.ascii_lowercase + string.octdigits) for x in range(8)])
@@ -50,7 +50,7 @@ class UserRepo(db.Model):
 
 @app.route('/')
 def home():
-    return 'Hello World rlad!'
+    return render_template('base.html')
 
 @app.route('/answer/', methods=['POST'])
 def answer():
@@ -93,6 +93,12 @@ def callback():
     )
     logging.debug(headers.get('status'))
     logging.debug(body)
+
+    user = User(body['login'], body['email'], access_token)
+    db.session.add(user)
+    db.session.commit()
+
+    app.session
     return body
 
 if __name__ == '__main__':
@@ -100,4 +106,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
+    app.secret_key = os.urandom(24)
     app.run(host='0.0.0.0', port=port, debug = debug)
