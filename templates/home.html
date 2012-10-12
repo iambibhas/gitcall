@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="twelve columns">
+        <!-- userrepo list -->
+        {% for repolink in repolinks %}
+            <li>{{ repolink.repo_name }} - {{ repolink.token }}</li>
+        {% endfor %}
+        <!-- END userrepo list -->
+        <div href="#" class="large button dropdown">
+            Choose a repo to get notified
+            <ul>
+                {% for repo in repos %}
+                    <li><a href="{{ url_for('add_hook', repo_name = repo.name) }}">{{ repo.name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <!-- NEW userrepo list -->
+    </div>
+</div>
+{% endblock %}
