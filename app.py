@@ -15,9 +15,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
 db = SQLAlchemy(app)
 
 if os.environ.get('ENV', 'prod') == 'dev':
-    logging.basicConfig(filename='app.log',level=logging.DEBUG)
+    logging.basicConfig(filename='app.log', level=logging.DEBUG)
 else:
-    logging.basicConfig(stream=sys.stderr)
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 from werkzeug.contrib.cache import SimpleCache
 cache = SimpleCache()
