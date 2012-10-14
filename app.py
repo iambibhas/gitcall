@@ -154,6 +154,7 @@ def add_hook(repo_name):
 
 @app.route('/answer/<token>', methods=['POST'])
 def answer(token):
+    plivo_client = plivo.RestAPI(plivo_settings['auth_id'], plivo_settings['auth_token'])
     response = json.loads(request.data)
     name = response['pusher']['name']
     repo = response['repository']['name']
@@ -173,7 +174,7 @@ def answer(token):
         'from': '919836510821',
         'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
     }
-    (status_code, response) = app.plivo_client.make_call(params)
+    (status_code, response) = plivo_client.make_call(params)
     return str(response)
 
 @app.route('/answer/plivo/', methods=['POST'])
@@ -262,5 +263,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
-    app.plivo_client = plivo.RestAPI(plivo_settings['auth_id'], plivo_settings['auth_token'])
     app.run(host='0.0.0.0', port=port, debug = debug)
