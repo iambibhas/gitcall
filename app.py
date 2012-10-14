@@ -14,6 +14,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
 db = SQLAlchemy(app)
 logging.basicConfig(filename='app.log',level=logging.DEBUG)
 
+from werkzeug.contrib.cache import SimpleCache
+cache = SimpleCache()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -84,7 +86,14 @@ def home():
     logged_in = True
     user = User.query.filter_by(username = session['username']).first()
     repolinks = UserRepo.query.filter_by(user_id = user.id).all()
-    repos = app.gituser.get_repos()
+    try:
+        repos = cache.get('repos')
+        if repos is None:
+            repos = app.gituser.get_repos()
+            cache.set('repos', repos, timeout = 60)
+    except Exception as e:
+        flash(str(e))
+        repos = False
 
     return render_template(
         'home.html', 
@@ -94,6 +103,20 @@ def home():
         repos = repos
     )        
 
+@app.route('/add/mobile/', methods=['POST'])
+def add_mobile():
+    if 'username' not in session:
+        return redirect(url_for('home'))
+
+    try:
+        app.user.mobile = request.args('mobile', '')
+        db.session.sync()
+        flash('Mobile number added.')
+    except Exception as e:
+        flash(str(e))
+
+    return redirect(url_for('home'))
+
 @app.route('/add/<repo_name>', methods=['GET'])
 def add_hook(repo_name):
     if 'username' not in session:
@@ -102,37 +125,41 @@ def add_hook(repo_name):
     try:
         userrepo = UserRepo.query.filter_by(user_id=session['userid'], repo_name=repo_name).first()
         logging.debug(userrepo)
-        if userrepo is None:
-            repo = app.gituser.get_repo(repo_name)
-            userrepo = UserRepo(session['userid'], repo.name)
-            db.session.add(userrepo)
-            
-            logging.debug('userrepo no commit: %r' % userrepo.token)
-
-            config = {
-                "url": "http://4wk6.localtunnel.com/answer/",
-                "content_type": "json"
-            }
-            response = repo.create_hook('web', config)
-            
-            logging.debug('Hook Create Response: %r' % response)
-
-            db.session.commit()
-            flash('Repository successfully added')
-        else:
+        if userrepo is not None:
             flash('Already added the repository')
-        return redirect(url_for('home'))
+        
+        repo = app.gituser.get_repo(repo_name)
+        userrepo = UserRepo(session['userid'], repo.name)
+        db.session.add(userrepo)
+        db.session.commit()
+
+        config = {
+            "url": "http://%s/answer/%s" % (request.headers['HOST'], userrepo.token),
+            "content_type": "json"
+        }
+        response = repo.create_hook('web', config)
+        
+        flash('Repository successfully added')
     except Exception as e:
         flash(str(e))
-        return redirect(url_for('home'))
 
-@app.route('/answer/', methods=['POST'])
-def answer():
+    return redirect(url_for('home'))
+
+@app.route('/answer/<token>', methods=['POST'])
+def answer(token):
     response = json.loads(request.data)
     name = response['pusher']['name']
     repo = response['repository']['name']
     commit_msg = response['head_commit']['message']
-    app.message= '%s pushed a commit to %s with the message %s' % (name, repo, commit_msg)
+
+    userrepo = UserRepo.query.filter_by(token = token).first()
+    if userrepo is None:
+        return 'Invalid token'
+
+    if userrepo.user.username != name or userrepo.repo_name != repo:
+        return 'Invalid hook'
+
+    app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
 
     params = {
         'to': '919836510821',
@@ -140,23 +167,25 @@ def answer():
         'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
     }
     (status_code, response) = app.plivo_client.make_call(params)
-    logging.debug(response)
-    return 'answered'
+    return str(response)
 
 @app.route('/answer/plivo/', methods=['POST'])
 def answer_plivo():
-    logging.debug(request.form)
     resp = plivo.Response()
     if request.form['Event'] == 'StartApp':
-        resp.addSpeak('This is a Github notification. ' + app.message)
-        logging.debug(resp)
+        resp.addSpeak('Hi, This is a Git hub notification.', voice = 'MAN')
+        resp.addWait(length=1)
+        resp.addSpeak(app.message, voice = 'MAN')
+
         app.message = ''
-        return resp.to_xml()
+
+    return resp.to_xml()
 
 @app.route('/logout/', methods=['GET'])
 def logout():
     session.pop('username', None)
     session.pop('userid', None)
+    app.user = None
     return redirect(url_for('home'))
 
 @app.route('/login/', methods=['GET'])
@@ -212,6 +241,7 @@ def callback():
 
         app.github = Github(access_token)
         app.gituser = app.github.get_user()
+        app.user = user
 
         session['username'] = bodyobj['login']
         session['userid'] = user.id

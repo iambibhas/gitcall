@@ -4,17 +4,33 @@
 <div class="row">
     <div class="twelve columns">
         <!-- userrepo list -->
-        {% for repolink in repolinks %}
-            <li>{{ repolink.repo_name }} - {{ repolink.token }}</li>
-        {% endfor %}
+        {% if repolinks %}
+        <div class="row">
+            <h3>Currently added repositories</h3>
+            {% for repolink in repolinks %}
+            <span class="radius label">{{ repolink.repo_name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
         <!-- END userrepo list -->
-        <div href="#" class="large button dropdown">
-            Choose a repo to get notified
-            <ul>
-                {% for repo in repos %}
-                    <li><a href="{{ url_for('add_hook', repo_name = repo.name) }}">{{ repo.name }}</a></li>
-                {% endfor %}
-            </ul>
+        {% if repos %}
+        <br />
+        <div class="row">
+            <div href="#" class="large button dropdown">
+                Choose a repo to get notified
+                <ul>
+                    {% for repo in repos %}
+                    <li><a href="#" data-reveal-id="testModal" data-url="{{ url_for('add_hook', repo_name = repo.name) }}">{{ repo.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        <div id="testModal" class="reveal-modal medium">
+            <h2>Awesome. I have it.</h2>
+            <p class="lead">Your couch.  I it's mine.</p>
+            <p>Im a cool paragraph that lives inside of an even cooler modal. Wins</p>
+            <a class="close-reveal-modal">&#215;</a>
         </div>
         <!-- NEW userrepo list -->
     </div>
