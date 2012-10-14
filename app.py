@@ -62,7 +62,7 @@ class UserRepo(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
+    # TBD: add userrepo_id. only user_id doesn't solve it.
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     # Commit messages can be huge. Saving some of it.
     # Also, max 'Speak' text length of Plivo is not defined. :-/
