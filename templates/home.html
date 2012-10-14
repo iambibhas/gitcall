@@ -17,7 +17,7 @@
         <br />
         <div class="row">
             <div href="#" class="large button dropdown">
-                Choose a repo to get notified
+                Choose a Repository to get notified
                 <ul>
                     {% for repo in repos %}
                     <li><a href="{{ url_for('add_hook', repo_name = repo.name) }}" >{{ repo.name }}</a></li>
