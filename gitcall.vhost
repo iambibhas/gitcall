@@ -3,7 +3,6 @@
 
     WSGIDaemonProcess gitcall user=ubuntu group=ubuntu threads=5
     WSGIScriptAlias / /home/ubuntu/sites/gitcall/gitcall.wsgi
-    WSGIRestrictStdout Off
 
     <Directory /home/ubuntu/sites/gitcall>
         WSGIProcessGroup gitcall
