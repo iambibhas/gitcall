@@ -262,6 +262,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
-    app.secret_key = os.urandom(24)
     app.plivo_client = plivo.RestAPI(plivo_settings['auth_id'], plivo_settings['auth_token'])
     app.run(host='0.0.0.0', port=port, debug = debug)
