@@ -146,7 +146,7 @@ def add_hook(repo_name):
         }
         response = repo.create_hook('web', config)
         
-        flash('Repository successfully added')
+        flash('Hook successfully added to Repository. Now Push a commit and see the magic!')
     except Exception as e:
         flash(str(e))
 
