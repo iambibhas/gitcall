@@ -35,9 +35,11 @@ def setup_vhost():
 
 def setup_venv():
     with cd(env.project_path):
-        run('virtualenv venv')
+        run('rm -rf venv')
+        run('virtualenv -p /usr/bin/python2.7 venv')
         with prefix('source venv/bin/activate'):
             run('pip install -r requirements.txt')
+        put('venv/lib/python2.7/site-packages/oauth2/__init__.py', 'venv/lib/python2.7/site-packages/oauth2/')
 
 def setup_db():
     with cd(env.project_path):
