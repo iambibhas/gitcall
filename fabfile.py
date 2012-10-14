@@ -39,6 +39,10 @@ def setup_venv():
         with prefix('source venv/bin/activate'):
             run('pip install -r requirements.txt')
 
+def setup_db():
+    with cd(env.project_path):
+        run('python initdb.py')
+
 def deploy():
     pack()
     upload_tarball()
