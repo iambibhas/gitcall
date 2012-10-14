@@ -146,16 +146,12 @@ def answer():
 @app.route('/answer/plivo/', methods=['POST'])
 def answer_plivo():
     logging.debug(request.form)
+    resp = plivo.Response()
     if request.form['Event'] == 'StartApp':
-        params = {
-            'call_uuid': request.form['CallUUID'],
-            'text': app.message
-        }
-        (status_code, response) = app.plivo_client.speak(params)
-        logging.debug(response)
+        resp.addSpeak('This is a Github notification. ' + app.message)
+        logging.debug(resp)
         app.message = ''
-
-    return 'answered'
+        return resp.to_xml()
 
 @app.route('/logout/', methods=['GET'])
 def logout():
