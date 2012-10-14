@@ -13,7 +13,11 @@ import plivo
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
 db = SQLAlchemy(app)
-logging.basicConfig(filename='app.log',level=logging.DEBUG)
+
+if os.environ.get('ENV', 'prod') == 'dev':
+    logging.basicConfig(filename='app.log',level=logging.DEBUG)
+else:
+    logging.basicConfig(stream=sys.stderr)
 
 from werkzeug.contrib.cache import SimpleCache
 cache = SimpleCache()
