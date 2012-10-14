@@ -3,7 +3,6 @@
 
   var $doc = $(document),
       Modernizr = window.Modernizr;
-
   
   $.fn.foundationAlerts           ? $doc.foundationAlerts() : null;
   $.fn.foundationAccordion        ? $doc.foundationAccordion() : null;

@@ -4,8 +4,10 @@ import logging, string, random, json
 from datetime import datetime
 from flask import Flask, redirect, request, session, render_template, url_for, flash
 from config import github_oauth_settings as oauth_settings
+from config import plivo_settings
 from flask.ext.sqlalchemy import SQLAlchemy
 from github import Github
+import plivo
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
@@ -17,8 +19,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120))
+    mobile = db.Column(db.Integer)
     access_token = db.Column(db.String(64), unique=True)
-    linked_repos = db.relationship('UserRepo', backref='user', lazy='select')
+
+    linked_repos = db.relationship('UserRepo', backref='user', lazy='joined')
+    notifications = db.relationship('Notification', backref='user', lazy='joined')
 
     def __init__(self, username, email, access_token):
         self.username = username
@@ -45,7 +50,26 @@ class UserRepo(db.Model):
         self.create_date = datetime.utcnow()
 
     def __repr__(self):
-        return '<UserRepo %r/%r>' % (self.user.username, self.repo_name)
+        return '<UserRepo %r/%r>' % (self.user_id, self.repo_name)
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # Commit messages can be huge. Saving some of it.
+    # Also, max 'Speak' text length of Plivo is not defined. :-/
+    text = db.Column(db.String(512))
+    create_time = db.Column(db.DateTime)
+
+    def __init__(self, user_id, text):
+        self.user_id = user_id
+        self.text = text
+        self.create_time = datetime.utcnow()
+
+    def __repr__(self):
+        return '<Notification %r:%r>' % (self.user_id, self.create_time)
+
 
 @app.route('/')
 def home():
@@ -60,7 +84,7 @@ def home():
     logged_in = True
     user = User.query.filter_by(username = session['username']).first()
     repolinks = UserRepo.query.filter_by(user_id = user.id).all()
-    repos = app.github.get_user().get_repos()
+    repos = app.gituser.get_repos()
 
     return render_template(
         'home.html', 
@@ -76,75 +100,129 @@ def add_hook(repo_name):
         return redirect(url_for('home'))
 
     try:
-        repo = app.github.get_user().get_repo(repo_name)
+        userrepo = UserRepo.query.filter_by(user_id=session['userid'], repo_name=repo_name).first()
+        logging.debug(userrepo)
+        if userrepo is None:
+            repo = app.gituser.get_repo(repo_name)
+            userrepo = UserRepo(session['userid'], repo.name)
+            db.session.add(userrepo)
+            
+            logging.debug('userrepo no commit: %r' % userrepo.token)
 
-        userrepo = UserRepo(session['userid'], repo.name)
-        db.session.add(userrepo)
-        db.session.commit()
-        
+            config = {
+                "url": "http://4wk6.localtunnel.com/answer/",
+                "content_type": "json"
+            }
+            response = repo.create_hook('web', config)
+            
+            logging.debug('Hook Create Response: %r' % response)
+
+            db.session.commit()
+            flash('Repository successfully added')
+        else:
+            flash('Already added the repository')
         return redirect(url_for('home'))
     except Exception as e:
+        flash(str(e))
         return redirect(url_for('home'))
 
 @app.route('/answer/', methods=['POST'])
 def answer():
+    response = json.loads(request.data)
+    name = response['pusher']['name']
+    repo = response['repository']['name']
+    commit_msg = response['head_commit']['message']
+    app.message= '%s pushed a commit to %s with the message %s' % (name, repo, commit_msg)
+
+    params = {
+        'to': '919836510821',
+        'from': '919836510821',
+        'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
+    }
+    (status_code, response) = app.plivo_client.make_call(params)
+    logging.debug(response)
+    return 'answered'
+
+@app.route('/answer/plivo/', methods=['POST'])
+def answer_plivo():
+    logging.debug(request.form)
+    if request.form['Event'] == 'StartApp':
+        params = {
+            'call_uuid': request.form['CallUUID'],
+            'text': app.message
+        }
+        (status_code, response) = app.plivo_client.speak(params)
+        logging.debug(response)
+        app.message = ''
+
     return 'answered'
 
 @app.route('/logout/', methods=['GET'])
 def logout():
     session.pop('username', None)
+    session.pop('userid', None)
     return redirect(url_for('home'))
 
 @app.route('/login/', methods=['GET'])
 def login():
-    oauth_client = oauth2.Client2(
-        oauth_settings['client_id'],
-        oauth_settings['client_secret'],
-        oauth_settings['base_url'],
-        disable_ssl_certificate_validation=True
-    )
-    authorization_url = oauth_client.authorization_url(
-        redirect_uri=oauth_settings['redirect_url'],
-        params={'scope': 'user,repo'}
-    )
-    logging.debug('authorization_url: %s' % authorization_url)
-    return redirect(authorization_url)
+    try:
+        oauth_client = oauth2.Client2(
+            oauth_settings['client_id'],
+            oauth_settings['client_secret'],
+            oauth_settings['base_url'],
+            disable_ssl_certificate_validation=True
+        )
+        authorization_url = oauth_client.authorization_url(
+            redirect_uri=oauth_settings['redirect_url'],
+            params={'scope': 'user,repo'}
+        )
+        logging.debug('authorization_url: %s' % authorization_url)
+        return redirect(authorization_url)
+    except Exception as e:
+        flash(str(e))
+        return redirect(url_for('home'))
 
 @app.route('/login/callback/', methods=['GET'])
 def callback():
-    oauth_client = oauth2.Client2(
-        oauth_settings['client_id'],
-        oauth_settings['client_secret'],
-        oauth_settings['base_url'],
-        disable_ssl_certificate_validation=True
-    )
-    code = request.args.get('code', '')
-    data = oauth_client.access_token(
-        code, 
-        oauth_settings['redirect_url'],
-    )
-    access_token = data.get('access_token')
-    logging.debug(access_token)
-    (headers, body) = oauth_client.request(
-        'https://api.github.com/user',
-        access_token=access_token,
-        token_param='access_token'
-    )
-    logging.debug(headers.get('status'))
-    logging.debug(body)
-    bodyobj = json.loads(body)
-    logging.debug(bodyobj)
+    try:
+        oauth_client = oauth2.Client2(
+            oauth_settings['client_id'],
+            oauth_settings['client_secret'],
+            oauth_settings['base_url'],
+            disable_ssl_certificate_validation=True
+        )
+        code = request.args.get('code', '')
+        data = oauth_client.access_token(
+            code, 
+            oauth_settings['redirect_url'],
+        )
+        access_token = data.get('access_token')
+        logging.debug(access_token)
+        (headers, body) = oauth_client.request(
+            'https://api.github.com/user',
+            access_token=access_token,
+            token_param='access_token'
+        )
+        logging.debug(headers.get('status'))
+        # logging.debug(body)
+        bodyobj = json.loads(body)
+        # logging.debug(bodyobj)
 
-    user = User.query.filter_by(username = bodyobj['login']).first()
-    if user is None:
-        user = User(bodyobj['login'], bodyobj['email'], access_token)
-        db.session.add(user)
-        db.session.commit()
+        user = User.query.filter_by(username = bodyobj['login']).first()
+        if user is None:
+            user = User(bodyobj['login'], bodyobj['email'], access_token)
+            db.session.add(user)
+            db.session.commit()
 
-    app.github = Github(access_token)
+        app.github = Github(access_token)
+        app.gituser = app.github.get_user()
 
-    session['username'] = bodyobj['login']
-    session['userid'] = user.id
+        session['username'] = bodyobj['login']
+        session['userid'] = user.id
+
+    except Exception as e:
+        flash(str(e))
+
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
@@ -153,4 +231,5 @@ if __name__ == '__main__':
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
     app.secret_key = os.urandom(24)
+    app.plivo_client = plivo.RestAPI(plivo_settings['auth_id'], plivo_settings['auth_token'])
     app.run(host='0.0.0.0', port=port, debug = debug)

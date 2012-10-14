@@ -37,16 +37,34 @@
             <p>Get your github commit notifications right on your cell phone.</p>
         </header>
     </div>
+    {% with messages = get_flashed_messages() %}
+    <div class="row">
+        {% if messages %}
+            <div class="twelve columns">
+            {% for message in messages %}
+                <div class="alert-box">
+                    {{ message }}
+                    <a href="" class="close">&times;</a>
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    {% endwith %}
 
     {% if logged_in %}
-        <div class="row">
-            <h3>Hello {{ user.username }}.</h3>
-            <a href="{{ url_for('logout') }}"></a>
+        <div class="row">     
+            <div class="twelve columns">
+                <h3>Hello {{ user.username }}.</h3>
+                <a class="button" href="{{ url_for('logout') }}">Logout</a>
+            </div>
         </div>
         {% block content %}{% endblock %}
     {% else %}
         <div class="row">
-            <p><a href="{{ url_for('login') }}" class="button">Login with Github</a></p>
+            <div class="twelve columns">
+                <p><a href="{{ url_for('login') }}" class="button">Login with Github</a></p>
+            </div>
         </div>
     {% endif %}
   
