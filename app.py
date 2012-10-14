@@ -2,6 +2,7 @@ import os
 import sys
 import oauth2
 import logging, string, random, json
+from functools import wraps
 from datetime import datetime
 from flask import Flask, redirect, request, session, render_template, url_for, flash
 from config import github_oauth_settings as oauth_settings
@@ -77,6 +78,14 @@ class Notification(db.Model):
     def __repr__(self):
         return '<Notification %r:%r>' % (self.user_id, self.create_time)
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            flash('You need to Login first!')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def home():
@@ -109,10 +118,8 @@ def home():
     )        
 
 @app.route('/add/mobile/', methods=['POST'])
+@login_required
 def add_mobile():
-    if 'username' not in session:
-        return redirect(url_for('home'))
-
     try:
         user = User.query.filter_by(id = session['userid']).first()
         user.mobile = request.form['mobile']
@@ -125,10 +132,8 @@ def add_mobile():
     return redirect(url_for('home'))
 
 @app.route('/add/<repo_name>', methods=['GET'])
+@login_required
 def add_hook(repo_name):
-    if 'username' not in session:
-        return redirect(url_for('home'))
-
     try:
         userrepo = UserRepo.query.filter_by(user_id=session['userid'], repo_name=repo_name).first()
         logging.debug(userrepo)
@@ -190,6 +195,7 @@ def answer_plivo():
     return resp.to_xml()
 
 @app.route('/logout/', methods=['GET'])
+@login_required
 def logout():
     session.pop('username', None)
     session.pop('userid', None)
@@ -263,4 +269,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
+    if debug:
+        app.secret_key = os.urandom(24)
     app.run(host='0.0.0.0', port=port, debug = debug)
