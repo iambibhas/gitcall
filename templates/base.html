@@ -53,31 +53,31 @@
     {% endwith %}
 
     {% if logged_in %}
-        <div class="row">     
-            <div class="twelve columns">
-                <h3>Hello {{ user.username }}.</h3>
-                <a class="button" href="{{ url_for('logout') }}">Logout</a>
-            </div>
-            {% if not user.mobile %}
-            <div class="twelve columns">
-                <h5>You need to add your mobile number.</h5>
-                <form>
-                    <div class="twelve column">
-                        <label for="mobile">Enter you mobile number with international code.</label>
-                        <input id="mobile" type="text" placeholder="919826510821" class="four">
-                        <input type="submit" value="Save">
-                    </div>
-                </form>
-            </div>
-            {% endif %}
+    <div class="row">     
+        <div class="twelve columns">
+            <h3>Hello {{ user.username }}.</h3>
+            <a class="button" href="{{ url_for('logout') }}">Logout</a>
         </div>
-        {% block content %}{% endblock %}
+        {% if not user.mobile %}
+        <div class="twelve columns">
+            <h5>You need to add your mobile number.</h5>
+            <form action="{{ url_for('add_mobile') }}" method="post">
+                <div class="twelve column">
+                    <label for="mobile">Enter you mobile number with international code.</label>
+                    <input name="mobile" id="mobile" type="text" placeholder="919826510821" class="four">
+                    <input type="submit" value="Save">
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% block content %}{% endblock %}
     {% else %}
-        <div class="row">
-            <div class="twelve columns">
-                <p><a href="{{ url_for('login') }}" class="button">Login with Github</a></p>
-            </div>
+    <div class="row">
+        <div class="twelve columns">
+            <p><a href="{{ url_for('login') }}" class="button">Login with Github</a></p>
         </div>
+    </div>
     {% endif %}
   
   

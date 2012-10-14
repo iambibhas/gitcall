@@ -1,4 +1,5 @@
 import os
+import sys
 import oauth2
 import logging, string, random, json
 from datetime import datetime
@@ -109,10 +110,12 @@ def add_mobile():
         return redirect(url_for('home'))
 
     try:
-        app.user.mobile = request.args('mobile', '')
-        db.session.sync()
+        user = User.query.filter_by(id = session['userid']).first()
+        user.mobile = request.form['mobile']
+        db.session.commit()
         flash('Mobile number added.')
     except Exception as e:
+        logging.debug(sys.exc_info())
         flash(str(e))
 
     return redirect(url_for('home'))
@@ -198,7 +201,7 @@ def login():
             disable_ssl_certificate_validation=True
         )
         authorization_url = oauth_client.authorization_url(
-            redirect_uri=oauth_settings['redirect_url'],
+            redirect_uri='http://%s/login/callback/' % request.headers['HOST'],
             params={'scope': 'user,repo'}
         )
         logging.debug('authorization_url: %s' % authorization_url)
@@ -219,7 +222,7 @@ def callback():
         code = request.args.get('code', '')
         data = oauth_client.access_token(
             code, 
-            oauth_settings['redirect_url'],
+            'http://%s/login/callback/' % request.headers['HOST'],
         )
         access_token = data.get('access_token')
         logging.debug(access_token)
@@ -241,7 +244,6 @@ def callback():
 
         app.github = Github(access_token)
         app.gituser = app.github.get_user()
-        app.user = user
 
         session['username'] = bodyobj['login']
         session['userid'] = user.id
