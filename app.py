@@ -170,8 +170,8 @@ def answer(token):
     app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
 
     params = {
-        'to': '919836510821',
-        'from': '919836510821',
+        'to': userrepo.user.mobile,
+        'from': userrepo.user.mobile,
         'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
     }
     (status_code, response) = plivo_client.make_call(params)
@@ -183,7 +183,7 @@ def answer_plivo():
     if request.form['Event'] == 'StartApp':
         resp.addSpeak('Hi, This is a Git hub notification.', voice = 'MAN')
         resp.addWait(length=1)
-        resp.addSpeak(app.message, voice = 'MAN')
+        resp.addSpeak(app.message)
 
         app.message = ''
 

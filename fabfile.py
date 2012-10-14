@@ -54,6 +54,5 @@ def deploy():
         run('tar -xvf dist/%s.tar' % env.project)
     if not files.exists('%s/venv/' % env.project_path):
         setup_venv()
-    setup_db()
     # create virtualhost
     setup_vhost()
