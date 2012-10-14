@@ -43,7 +43,8 @@ def setup_venv():
 
 def setup_db():
     with cd(env.project_path):
-        run('python initdb.py')
+        with prefix('source venv/bin/activate'):
+            run('python initdb.py')
 
 def deploy():
     pack()
