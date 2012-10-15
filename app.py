@@ -182,8 +182,8 @@ def answer(token):
         app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
 
         params = {
-            'to': userrepo.user.mobile,
-            'from': userrepo.user.mobile,
+            'to': str(userrepo.user.mobile),
+            'from': str(userrepo.user.mobile),
             'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
         }
         (status_code, response) = plivo_client.make_call(params)
