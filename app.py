@@ -170,12 +170,13 @@ def answer(token):
     commit_msg = req['head_commit']['message']
     try:
         userrepo = UserRepo.query.filter_by(token = token).first()
+        user = User/query.filter_by(id = userrepo.user_id).first()
         logging.debug(userrepo)
         if userrepo is None:
             logging.debug('Invalid token')
             return 'Invalid token'
 
-        if userrepo.user.username != name or userrepo.repo_name != repo:
+        if user.username != name or userrepo.repo_name != repo:
             logging.debug('Invalid hook')
             return 'Invalid hook'
 
