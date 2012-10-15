@@ -131,7 +131,6 @@ def add_mobile():
     except Exception as e:
         logging.debug(sys.exc_info())
         flash(str(e))
-
     return redirect(url_for('home'))
 
 @app.route('/add/<repo_name>', methods=['GET'])
