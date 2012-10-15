@@ -51,8 +51,11 @@ def deploy():
     upload_tarball()
     # Extract files
     with cd(env.project_path):
-        run('tar -zvf dist/%s.tar.gz' % env.project)
+        run('tar -zxvf dist/%s.tar.gz' % env.project)
     if not files.exists('%s/venv/' % env.project_path):
         setup_venv()
     # create virtualhost
     setup_vhost()
+
+def tail_apache():
+    run('tail -f /var/log/apache2/error.log')
