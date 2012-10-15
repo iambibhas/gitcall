@@ -20,7 +20,7 @@ def upload_tarball():
     with cd(env.project_path):
         # saving last deployment tarball for backup
         # run('mv dist/%s.tar dist/last_deploy.tar' % env.project)
-        put('dist/%s.tar' % env.project, 'dist/')
+        put('dist/%s.tar.gz' % env.project, 'dist/')
 
 def reload_apache():
     sudo('/etc/init.d/apache2 reload')
@@ -51,7 +51,7 @@ def deploy():
     upload_tarball()
     # Extract files
     with cd(env.project_path):
-        run('tar -zvf dist/%s.tar' % env.project)
+        run('tar -zvf dist/%s.tar.gz' % env.project)
     if not files.exists('%s/venv/' % env.project_path):
         setup_venv()
     # create virtualhost
