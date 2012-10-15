@@ -170,10 +170,13 @@ def answer(token):
     commit_msg = req['head_commit']['message']
     try:
         userrepo = UserRepo.query.filter_by(token = token).first()
+        logging.debug(userrepo)
         if userrepo is None:
+            logging.debug('Invalid token')
             return 'Invalid token'
 
         if userrepo.user.username != name or userrepo.repo_name != repo:
+            logging.debug('Invalid hook')
             return 'Invalid hook'
 
         app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)

@@ -19,7 +19,7 @@ def pack():
 def upload_tarball():
     with cd(env.project_path):
         # saving last deployment tarball for backup
-        run('mv dist/%s.tar dist/last_deploy.tar' % env.project)
+        # run('mv dist/%s.tar dist/last_deploy.tar' % env.project)
         put('dist/%s.tar' % env.project, 'dist/')
 
 def reload_apache():
