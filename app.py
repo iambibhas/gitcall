@@ -170,7 +170,7 @@ def answer(token):
     commit_msg = req['head_commit']['message']
     try:
         userrepo = UserRepo.query.filter_by(token = token).first()
-        user = User/query.filter_by(id = userrepo.user_id).first()
+        user = User.query.filter_by(id = userrepo.user_id).first()
         logging.debug(userrepo)
         if userrepo is None:
             logging.debug('Invalid token')
@@ -191,7 +191,7 @@ def answer(token):
         logging.debug(response)
     except Exception as e:
         logging.debug(str(e))
-    return str(response)
+    return str('this should not be reachable')
 
 @app.route('/answer/plivo/', methods=['POST'])
 def answer_plivo():
