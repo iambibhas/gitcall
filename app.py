@@ -162,26 +162,31 @@ def add_hook(repo_name):
 @app.route('/answer/<token>', methods=['POST'])
 def answer(token):
     plivo_client = plivo.RestAPI(plivo_settings['auth_id'], plivo_settings['auth_token'])
-    response = json.loads(request.data)
-    name = response['pusher']['name']
-    repo = response['repository']['name']
-    commit_msg = response['head_commit']['message']
+    req = json.loads(request.data)
+    logging.debug(req)
 
-    userrepo = UserRepo.query.filter_by(token = token).first()
-    if userrepo is None:
-        return 'Invalid token'
+    name = req['pusher']['name']
+    repo = req['repository']['name']
+    commit_msg = req['head_commit']['message']
+    try:
+        userrepo = UserRepo.query.filter_by(token = token).first()
+        if userrepo is None:
+            return 'Invalid token'
 
-    if userrepo.user.username != name or userrepo.repo_name != repo:
-        return 'Invalid hook'
+        if userrepo.user.username != name or userrepo.repo_name != repo:
+            return 'Invalid hook'
 
-    app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
+        app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
 
-    params = {
-        'to': userrepo.user.mobile,
-        'from': userrepo.user.mobile,
-        'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
-    }
-    (status_code, response) = plivo_client.make_call(params)
+        params = {
+            'to': userrepo.user.mobile,
+            'from': userrepo.user.mobile,
+            'answer_url': 'http://%s/answer/plivo/' % request.headers['HOST'],
+        }
+        (status_code, response) = plivo_client.make_call(params)
+        logging.debug(response)
+    except Exception as e:
+        logging.debug(str(e))
     return str(response)
 
 @app.route('/answer/plivo/', methods=['POST'])
