@@ -14,7 +14,7 @@ def test():
     run('whoami')
 
 def pack():
-    local('git archive HEAD > dist/%s.tar' % env.project)
+    local('git archive HEAD | gzip > dist/%s.tar.gz' % env.project)
 
 def upload_tarball():
     with cd(env.project_path):
@@ -51,7 +51,7 @@ def deploy():
     upload_tarball()
     # Extract files
     with cd(env.project_path):
-        run('tar -xvf dist/%s.tar' % env.project)
+        run('tar -zvf dist/%s.tar' % env.project)
     if not files.exists('%s/venv/' % env.project_path):
         setup_venv()
     # create virtualhost
