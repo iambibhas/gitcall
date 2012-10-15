@@ -51,6 +51,8 @@ class UserRepo(db.Model):
     token = db.Column(db.String(8), unique=True)
     create_date = db.Column(db.DateTime)
 
+    notifications = db.relationship('Notification', backref='userrepo', lazy='joined')
+
     def __init__(self, user_id, repo_name):
         self.user_id = user_id
         self.repo_name = repo_name
@@ -63,8 +65,9 @@ class UserRepo(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # TBD: add userrepo_id. only user_id doesn't solve it.
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_repo_id = db.Column(db.Integer, db.ForeignKey('user_repo.id'))
     # Commit messages can be huge. Saving some of it.
     # Also, max 'Speak' text length of Plivo is not defined. :-/
     text = db.Column(db.String(512))
