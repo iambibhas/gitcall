@@ -4,7 +4,7 @@ import oauth2
 import logging, string, random, json
 from functools import wraps
 from datetime import datetime
-from flask import Flask, redirect, request, session, render_template, url_for, flash
+from flask import Flask, redirect, request, session, render_template, url_for, flash, g
 from config import github_oauth_settings as oauth_settings
 from config import plivo_settings
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -17,12 +17,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
 app.config['SESSION_COOKIE_NAME'] = 'gitcall'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_LIFETIME'] = 6*60*60
+app.config['SESSION_COOKIE_PATH'] = '/'
 
 
 db = SQLAlchemy(app)
 
 if os.environ.get('ENV', 'prod') == 'dev':
-    app.config['SECRET_KEY'] = 'development secret key here'
+    app.config['SECRET_KEY'] = 'developmentsecretkeyhere'
     app.config['SERVER_NAME'] = 'gitcall.local:5000'
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
 else:
@@ -113,7 +114,7 @@ def home():
         repos = cache.get('repos')
         logging.debug('Repositories from Cache: %r' % repos)
         if not repos:
-            repos = session['gituser'].get_repos()
+            repos = g.gituser.get_repos()
             logging.debug('Repositories from API: %r' % repos)
             cache.set('repos', repos, timeout = 60)
     except Exception as e:
@@ -130,7 +131,7 @@ def home():
 @login_required
 def add_mobile():
     try:
-        user = User.query.filter_by(id = session['user'].id).first()
+        user = User.query.filter_by(id = g.user.id).first()
         user.mobile = request.form['mobile']
         db.session.commit()
         flash('Mobile number added.')
@@ -143,13 +144,13 @@ def add_mobile():
 @login_required
 def add_hook(repo_name):
     try:
-        userrepo = UserRepo.query.filter_by(user_id=session['user'].id, repo_name=repo_name).first()
+        userrepo = UserRepo.query.filter_by(user_id=g.user.id, repo_name=repo_name).first()
         logging.debug(userrepo)
         if userrepo is not None:
             flash('Already added the repository')
         
-        repo = session['gituser'].get_repo(repo_name)
-        userrepo = UserRepo(session['user'].id, repo.name)
+        repo = g.gituser.get_repo(repo_name)
+        userrepo = UserRepo(g.user.id, repo.name)
         db.session.add(userrepo)
         db.session.commit()
 
@@ -279,10 +280,10 @@ def callback():
             db.session.add(user)
             db.session.commit()
 
-        session['github'] = Github(access_token)
-        session['gituser'] = session['github'].get_user()
+        g.github = Github(access_token)
+        g.gituser = g.github.get_user()
 
-        session['user'] = user
+        g.user = user
         session['logged_in'] = True
     except Exception as e:
         logging.debug('Login callback exc: %r' % e)
