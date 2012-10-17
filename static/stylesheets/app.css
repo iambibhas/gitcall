@@ -13,7 +13,7 @@
    Shared Styles
 ----------------------------------------- */
 body {
-    font-family: 'Ubuntu';
+    font-family: 'Ubuntu Condensed';
 }
 
 h1 {
@@ -22,7 +22,7 @@ h1 {
 }
 
 h2, h3, h4, h5 {
-    font-family: 'Ubuntu';
+    font-family: 'Ubuntu Condensed';
 }
 
 /* -----------------------------------------

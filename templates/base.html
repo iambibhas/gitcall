@@ -34,7 +34,7 @@
     <div class="contain-to-grid">
         <nav class="top-bar">
             <ul>
-                <li class="name"><i><h1><a href="#">GitCall</a></h1></i></li>
+                <li class="name"><i><h1><a href="{{ url_for('home') }}">GitCall</a></h1></i></li>
                 <li class="toggle-topbar"><a href="#"></a></li>
             </ul>
             <section>
@@ -55,6 +55,7 @@
         </nav>
     </div>
     {% with messages = get_flashed_messages() %}
+    <br />
     <div class="row">
         {% if messages %}
             <div class="twelve columns">
@@ -75,11 +76,9 @@
         <div class="twelve columns panel radius">
             <h5>You need to add your mobile number.</h5>
             <form action="{{ url_for('add_mobile') }}" method="post">
-                <div class="twelve column">
-                    <label for="mobile">Enter you mobile number with international code.</label>
-                    <input name="mobile" id="mobile" type="text" placeholder="919876543210" class="four">
-                    <input type="submit" value="Save">
-                </div>
+                <label for="mobile">Enter you mobile number with international code.</label>
+                <input name="mobile" id="mobile" type="text" placeholder="919876543210" class="four">
+                <input type="submit" value="Save" class="one">
             </form>
         </div>
         {% endif %}
@@ -87,8 +86,11 @@
     {% block content %}{% endblock %}
     {% else %}
     <div class="row">
-        <div class="twelve columns">
-            <p><a href="{{ url_for('login') }}" class="button">Login with Github</a></p>
+        <div class="twelve columns" align="center">
+            <h2>Get your Github repo's push notifications wherever you are.</h2>
+        </div>
+        <div class="twelve columns" align="center">
+            <img src="static/images/github.png">
         </div>
     </div>
     {% endif %}

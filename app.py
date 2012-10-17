@@ -280,5 +280,5 @@ if __name__ == '__main__':
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
     if debug:
-        app.secret_key = os.urandom(24)
+        app.secret_key = 'secret key goes here'
     app.run(host='0.0.0.0', port=port, debug = debug)
