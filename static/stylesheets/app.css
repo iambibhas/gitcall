@@ -7,13 +7,23 @@
 :: Page Name 1
 :: Page Name 2
 */
-
+@import url(http://fonts.googleapis.com/css?family=Molle:400italic|Ubuntu|Ubuntu+Condensed);
 
 /* -----------------------------------------
    Shared Styles
 ----------------------------------------- */
+body {
+    font-family: 'Ubuntu';
+}
 
+h1 {
+    font-family: 'Molle';
+    font-weight: 400;
+}
 
+h2, h3, h4, h5 {
+    font-family: 'Ubuntu';
+}
 
 /* -----------------------------------------
    Page Name 1
