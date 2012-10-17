@@ -173,11 +173,11 @@ def answer(token):
         logging.debug(userrepo)
         if userrepo is None:
             logging.debug('Invalid token')
-            return 'Invalid token'
+            return 'Invalid token: %s' % token
 
         if userrepo.repo_name != repo:
             logging.debug('Invalid hook')
-            return 'Invalid hook'
+            return 'Invalid hook: %r' % req
 
         app.message= '%s pushed a commit to %s, %s' % (name, repo, commit_msg)
 
