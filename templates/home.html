@@ -8,7 +8,7 @@
         <div class="row">
             <h3>Currently added repositories</h3>
             {% for repolink in repolinks %}
-            <span class="radius label">{{ repolink.repo_name }}</span>
+            <span class="radius secondary label"><a href="{{ url_for('details', repo_name = repolink.repo_name) }}">{{ repolink.repo_name }}</a></span>
             {% endfor %}
         </div>
         {% endif %}
@@ -16,8 +16,9 @@
         {% if repos and user.mobile %}
         <br />
         <div class="row">
+            <h2>Choose a Repository to get started.</h2>
             <div href="#" class="large button dropdown">
-                Choose a Repository to get notified
+                Choose one
                 <ul>
                     {% for repo in repos %}
                     <li><a href="{{ url_for('add_hook', repo_name = repo.name) }}" >{{ repo.name }}</a></li>

@@ -12,8 +12,8 @@
 /* -----------------------------------------
    Shared Styles
 ----------------------------------------- */
-body {
-    font-family: 'Ubuntu Condensed';
+body, h2, h3, h4, h5, ul, li {
+    font-family: 'Ubuntu';
 }
 
 h1 {
@@ -21,9 +21,6 @@ h1 {
     font-weight: 400;
 }
 
-h2, h3, h4, h5 {
-    font-family: 'Ubuntu Condensed';
-}
 
 /* -----------------------------------------
    Page Name 1

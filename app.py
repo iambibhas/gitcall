@@ -12,12 +12,21 @@ from github import Github
 import plivo
 
 app = Flask(__name__)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
+app.config['SESSION_COOKIE_NAME'] = 'gitcall'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_LIFETIME'] = 6*60*60
+
+
 db = SQLAlchemy(app)
 
 if os.environ.get('ENV', 'prod') == 'dev':
+    app.config['SECRET_KEY'] = 'development secret key here'
+    app.config['SERVER_NAME'] = 'gitcall.local:5000'
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
 else:
+    app.config['SERVER_NAME'] = 'gitcall.bibhas.in'
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 from werkzeug.contrib.cache import SimpleCache
@@ -84,7 +93,7 @@ class Notification(db.Model):
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'username' not in session:
+        if 'logged_in' not in session or not session['logged_in']:
             flash('You need to Login first!')
             return redirect(url_for('home'))
         return f(*args, **kwargs)
@@ -92,30 +101,27 @@ def login_required(f):
 
 @app.route('/')
 def home():
-    logged_in = False
-    
-    if 'username' not in session:
+    if 'logged_in' not in session or not session['logged_in']:
+        logging.debug('Not logged in %r' % session)
         return render_template(
-            'home.html', 
-            logged_in = logged_in
+            'home.html'
         )
     
-    logged_in = True
-    user = User.query.filter_by(username = session['username']).first()
+    logging.debug('Logged in %r' % session)
     repolinks = UserRepo.query.filter_by(user_id = user.id).all()
     try:
         repos = cache.get('repos')
-        if repos is None:
-            repos = app.gituser.get_repos()
+        logging.debug('Repositories from Cache: %r' % repos)
+        if not repos:
+            repos = session['gituser'].get_repos()
+            logging.debug('Repositories from API: %r' % repos)
             cache.set('repos', repos, timeout = 60)
     except Exception as e:
         flash(str(e))
         repos = False
 
     return render_template(
-        'home.html', 
-        logged_in = logged_in,
-        user = user,
+        'home.html',
         repolinks = repolinks,
         repos = repos
     )        
@@ -124,7 +130,7 @@ def home():
 @login_required
 def add_mobile():
     try:
-        user = User.query.filter_by(id = session['userid']).first()
+        user = User.query.filter_by(id = session['user'].id).first()
         user.mobile = request.form['mobile']
         db.session.commit()
         flash('Mobile number added.')
@@ -137,13 +143,13 @@ def add_mobile():
 @login_required
 def add_hook(repo_name):
     try:
-        userrepo = UserRepo.query.filter_by(user_id=session['userid'], repo_name=repo_name).first()
+        userrepo = UserRepo.query.filter_by(user_id=session['user'].id, repo_name=repo_name).first()
         logging.debug(userrepo)
         if userrepo is not None:
             flash('Already added the repository')
         
-        repo = app.gituser.get_repo(repo_name)
-        userrepo = UserRepo(session['userid'], repo.name)
+        repo = session['gituser'].get_repo(repo_name)
+        userrepo = UserRepo(session['user'].id, repo.name)
         db.session.add(userrepo)
         db.session.commit()
 
@@ -157,6 +163,17 @@ def add_hook(repo_name):
     except Exception as e:
         flash(str(e))
 
+    return redirect(url_for('home'))
+
+@app.route('/details/<repo_name>', methods=['GET'])
+@login_required
+def details(repo_name):
+    logged_in = ('username' in session)
+    repolink = UserRepo.query.filter_by(repo_name=repo_name).first_or_404()
+    try:
+        return render_template('repo.html')
+    except Exception as e:
+        flash(str(e))
     return redirect(url_for('home'))
 
 @app.route('/answer/<token>', methods=['POST'])
@@ -201,15 +218,14 @@ def answer_plivo():
         resp.addSpeak(app.message)
 
         app.message = ''
-
     return resp.to_xml()
 
 @app.route('/logout/', methods=['GET'])
-@login_required
 def logout():
-    session.pop('username', None)
-    session.pop('userid', None)
-    app.user = None
+    session.pop('user', None)
+    session.pop('logged_in', None)
+    session.pop('gituser', None)
+    session.pop('github', None)
     return redirect(url_for('home'))
 
 @app.route('/login/', methods=['GET'])
@@ -263,15 +279,16 @@ def callback():
             db.session.add(user)
             db.session.commit()
 
-        app.github = Github(access_token)
-        app.gituser = app.github.get_user()
+        session['github'] = Github(access_token)
+        session['gituser'] = session['github'].get_user()
 
-        session['username'] = bodyobj['login']
-        session['userid'] = user.id
-
+        session['user'] = user
+        session['logged_in'] = True
     except Exception as e:
+        logging.debug('Login callback exc: %r' % e)
         flash(str(e))
 
+    logging.debug(session)
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
@@ -279,6 +296,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     ENV = os.environ.get('ENV', 'prod')
     debug = (ENV == 'dev')
-    if debug:
-        app.secret_key = 'secret key goes here'
     app.run(host='0.0.0.0', port=port, debug = debug)

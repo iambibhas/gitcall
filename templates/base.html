@@ -19,10 +19,10 @@
     -->
 
     <!-- Included CSS Files (Compressed) -->
-    <link rel="stylesheet" href="static/stylesheets/foundation.min.css">
-    <link rel="stylesheet" href="static/stylesheets/app.css">
+    <link rel="stylesheet" href="/static/stylesheets/foundation.min.css">
+    <link rel="stylesheet" href="/static/stylesheets/app.css">
 
-    <script src="static/javascripts/modernizr.foundation.js"></script>
+    <script src="/static/javascripts/modernizr.foundation.js"></script>
 
     <!-- IE Fix for HTML5 Tags -->
     <!--[if lt IE 9]>
@@ -39,9 +39,9 @@
             </ul>
             <section>
                 <ul class="right">
-                    {% if logged_in %}
+                    {% if session['logged_in'] %}
                     <li class="has-dropdown">
-                        <a href="#">Hello {{ user.username }}</a>
+                        <a href="#">Hello {{ session['user'].username }}</a>
                         <ul class="dropdown">
                             <li><a href="#">Profile</a></li>
                         </ul>
@@ -72,7 +72,7 @@
 
     {% if logged_in %}
     <div class="row">
-        {% if not user.mobile %}
+        {% if not session['user'].mobile %}
         <div class="twelve columns panel radius">
             <h5>You need to add your mobile number.</h5>
             <form action="{{ url_for('add_mobile') }}" method="post">
@@ -90,7 +90,7 @@
             <h2>Get your Github repo's push notifications wherever you are.</h2>
         </div>
         <div class="twelve columns" align="center">
-            <img src="static/images/github.png">
+            <img src="/static/images/github.png">
         </div>
     </div>
     {% endif %}
@@ -128,10 +128,10 @@
   -->
   
   <!-- Included JS Files (Compressed) -->
-  <script src="static/javascripts/jquery.js"></script>
-  <script src="static/javascripts/foundation.min.js"></script>
+  <script src="/static/javascripts/jquery.js"></script>
+  <script src="/static/javascripts/foundation.min.js"></script>
   
   <!-- Initialize JS Plugins -->
-  <script src="static/javascripts/app.js"></script>
+  <script src="/static/javascripts/app.js"></script>
 </body>
 </html>
