@@ -12,22 +12,13 @@ from github import Github
 import plivo
 
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gitcall.db'
-app.config['SESSION_COOKIE_NAME'] = 'gitcall'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_LIFETIME'] = 6*60*60
-app.config['SESSION_COOKIE_PATH'] = '/'
-
-
 db = SQLAlchemy(app)
 
 if os.environ.get('ENV', 'prod') == 'dev':
-    app.config['SECRET_KEY'] = 'developmentsecretkeyhere'
-    app.config['SERVER_NAME'] = 'gitcall.local:5000'
+    app.secret_key = 'developmentsecretkeyhere'
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
 else:
-    app.config['SERVER_NAME'] = 'gitcall.bibhas.in'
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 from werkzeug.contrib.cache import SimpleCache
@@ -102,6 +93,7 @@ def login_required(f):
 
 @app.route('/')
 def home():
+    logging.debug('Home G: %r' % dir(g))
     if 'logged_in' not in session or not session['logged_in']:
         logging.debug('Not logged in %r' % session)
         return render_template(
@@ -109,12 +101,12 @@ def home():
         )
     
     logging.debug('Logged in %r' % session)
-    repolinks = UserRepo.query.filter_by(user_id = user.id).all()
+    repolinks = UserRepo.query.filter_by(user_id = session['user'].id).all()
     try:
         repos = cache.get('repos')
         logging.debug('Repositories from Cache: %r' % repos)
         if not repos:
-            repos = g.gituser.get_repos()
+            repos = session['gituser'].get_repos()
             logging.debug('Repositories from API: %r' % repos)
             cache.set('repos', repos, timeout = 60)
     except Exception as e:
@@ -131,7 +123,7 @@ def home():
 @login_required
 def add_mobile():
     try:
-        user = User.query.filter_by(id = g.user.id).first()
+        user = User.query.filter_by(id = session['user'].id).first()
         user.mobile = request.form['mobile']
         db.session.commit()
         flash('Mobile number added.')
@@ -144,13 +136,13 @@ def add_mobile():
 @login_required
 def add_hook(repo_name):
     try:
-        userrepo = UserRepo.query.filter_by(user_id=g.user.id, repo_name=repo_name).first()
+        userrepo = UserRepo.query.filter_by(user_id=session['user'].id, repo_name=repo_name).first()
         logging.debug(userrepo)
         if userrepo is not None:
             flash('Already added the repository')
         
-        repo = g.gituser.get_repo(repo_name)
-        userrepo = UserRepo(g.user.id, repo.name)
+        repo = session['gituser'].get_repo(repo_name)
+        userrepo = UserRepo(session['user'].id, repo.name)
         db.session.add(userrepo)
         db.session.commit()
 
@@ -169,10 +161,9 @@ def add_hook(repo_name):
 @app.route('/details/<repo_name>', methods=['GET'])
 @login_required
 def details(repo_name):
-    logged_in = ('username' in session)
     repolink = UserRepo.query.filter_by(repo_name=repo_name).first_or_404()
     try:
-        return render_template('repo.html')
+        return render_template('repo.html', repolink=repolink)
     except Exception as e:
         flash(str(e))
     return redirect(url_for('home'))
@@ -250,6 +241,7 @@ def login():
 
 @app.route('/login/callback/', methods=['GET'])
 def callback():
+    logging.debug('Callback Session: %r' % session.modified)
     try:
         oauth_client = oauth2.Client2(
             oauth_settings['client_id'],
@@ -269,7 +261,7 @@ def callback():
             access_token=access_token,
             token_param='access_token'
         )
-        logging.debug(headers.get('status'))
+        # logging.debug(headers.get('status'))
         # logging.debug(body)
         bodyobj = json.loads(body)
         # logging.debug(bodyobj)
@@ -280,16 +272,16 @@ def callback():
             db.session.add(user)
             db.session.commit()
 
-        g.github = Github(access_token)
-        g.gituser = g.github.get_user()
+        app.github = Github(access_token)
+        session['gituser'] = app.github.get_user()
 
-        g.user = user
+        session['user'] = user
         session['logged_in'] = True
+        session.modified = True
     except Exception as e:
         logging.debug('Login callback exc: %r' % e)
         flash(str(e))
 
-    logging.debug(session)
     return redirect(url_for('home'))
 
 if __name__ == '__main__':

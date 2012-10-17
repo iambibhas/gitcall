@@ -13,7 +13,7 @@
         </div>
         {% endif %}
         <!-- END userrepo list -->
-        {% if repos and user.mobile %}
+        {% if repos and session['user'].mobile %}
         <br />
         <div class="row">
             <h2>Choose a Repository to get started.</h2>

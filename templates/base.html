@@ -70,7 +70,7 @@
     </div>
     {% endwith %}
 
-    {% if logged_in %}
+    {% if session['logged_in'] %}
     <div class="row">
         {% if not session['user'].mobile %}
         <div class="twelve columns panel radius">
