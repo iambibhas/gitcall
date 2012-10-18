@@ -4,7 +4,7 @@
 <div class="row">
     <div class="twelve columns">
         {% if repolink %}
-        <h2>{{ repolink.repo_name }}</h2>
+        <h2><a href="https://github.com/{{ repolink.user.username }}/{{ repolink.repo_name }}">{{ repolink.repo_name }}</a></h2>
         <h3>Hook URL: {{ url_for('answer', token = repolink.token) }}</h3>
         {% endif %}
     </div>

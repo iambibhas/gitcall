@@ -8,7 +8,7 @@
         <div class="row">
             <h3>Currently added repositories</h3>
             {% for repolink in repolinks %}
-            <span class="radius secondary label"><a href="{{ url_for('details', repo_name = repolink.repo_name) }}">{{ repolink.repo_name }}</a></span>
+            <span class="radius secondary label"><a href="{{ url_for('hooks', repo_name = repolink.repo_name) }}">{{ repolink.repo_name }}</a></span>
             {% endfor %}
         </div>
         {% endif %}

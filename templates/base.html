@@ -43,7 +43,7 @@
                     <li class="has-dropdown">
                         <a href="#">Hello {{ session['user'].username }}</a>
                         <ul class="dropdown">
-                            <li><a href="#">Profile</a></li>
+                            <li><a href="{{ url_for('hooks_list') }}">Hooks</a></li>
                         </ul>
                     </li>
                     <li><a href="{{ url_for('logout') }}">Logout</a></li>
@@ -78,7 +78,7 @@
             <form action="{{ url_for('add_mobile') }}" method="post">
                 <label for="mobile">Enter you mobile number with international code.</label>
                 <input name="mobile" id="mobile" type="text" placeholder="919876543210" class="four">
-                <input type="submit" value="Save" class="one">
+                <input type="submit" value="Save" class="button">
             </form>
         </div>
         {% endif %}

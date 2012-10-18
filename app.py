@@ -158,12 +158,22 @@ def add_hook(repo_name):
 
     return redirect(url_for('home'))
 
-@app.route('/details/<repo_name>', methods=['GET'])
+@app.route('/hooks/', methods=['GET'])
 @login_required
-def details(repo_name):
-    repolink = UserRepo.query.filter_by(repo_name=repo_name).first_or_404()
+def hooks_list():
+    repolinks = UserRepo.query.filter_by(user_id = session['user'].id).all()
     try:
-        return render_template('repo.html', repolink=repolink)
+        return render_template('hooks_list.html', repolinks=repolinks)
+    except Exception as e:
+        flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route('/hooks/<repo_name>', methods=['GET'])
+@login_required
+def hooks(repo_name):
+    repolink = UserRepo.query.filter_by(repo_name=repo_name, user_id = session['user'].id).first_or_404()
+    try:
+        return render_template('hooks.html', repolink=repolink)
     except Exception as e:
         flash(str(e))
     return redirect(url_for('home'))
